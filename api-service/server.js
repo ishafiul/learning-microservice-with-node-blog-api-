@@ -2,7 +2,8 @@ const express = require("express");
 var proxy = require('express-http-proxy');
 const app = express()
 const server = require('http').createServer(app)
-
+const Authmiddle = require('./middleware/auth')
+new Authmiddle();
 app.use(express.json());
 
 app.set('view engine', 'ejs');
@@ -17,6 +18,7 @@ app.use(cors({
     origin: "*"
 }))
 app.use('/auth', proxy('http://localhost:8001'));
+// app.use('/auth/test', authMiddle.token, proxy('http://localhost:8001/test'));
 
 app.get('/', (req, res) => {
     var figlet = require('figlet');
