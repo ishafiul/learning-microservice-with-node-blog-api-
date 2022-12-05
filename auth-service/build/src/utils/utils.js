@@ -8,3 +8,4 @@ const generateOtp = (size) => {
     return String(Math.floor(x + Math.random() * y));
 };
 exports.generateOtp = generateOtp;
+//# sourceMappingURL=utils.js.map

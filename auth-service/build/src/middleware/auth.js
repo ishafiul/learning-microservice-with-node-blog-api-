@@ -28,7 +28,7 @@ module.exports = class AuthMiddle {
         else {
             return res.sendStatus(401);
         }
-        // tslint:disable-next-line:no-console
         console.log('middleware ok');
     }
 };
+//# sourceMappingURL=auth.js.map

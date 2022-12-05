@@ -9,6 +9,6 @@
     "jsonwebtoken": "^8.5.1"
   },
   "scripts": {
-    "start": "nodemon server.js"
+    "start": "node --watch server.js"
   }
 }

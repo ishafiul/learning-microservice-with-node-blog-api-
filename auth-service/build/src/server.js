@@ -17,7 +17,6 @@ const port = process.env.PORT || 8001;
 app.use((0, cors_1.default)({
     origin: "hhtp://localhost:8000"
 }));
-// tslint:disable-next-line:no-console
 mongoose_1.default.connect(process.env.MONGO_URL || '').then(() => console.log('connected to mongodb'));
 app.get('/', (req, res) => {
     const figlet = require('figlet');
@@ -33,5 +32,5 @@ app.get('/', (req, res) => {
     });
 });
 app.use("/", auth_route_1.AuthRouter);
-// tslint:disable-next-line:no-console
 server.listen(port, () => console.log(`Auth Service is running at http://localhost:${port}`));
+//# sourceMappingURL=server.js.map

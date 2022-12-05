@@ -1,6 +1,8 @@
+// @ts-ignore
 import express from "express";
 import {createServer} from "http";
 import mongoose from 'mongoose';
+// @ts-ignore
 import cors from "cors";
 import {AuthRouter} from "./routes/auth.route";
 

@@ -3,11 +3,12 @@ import {Router} from "express";
 const router = Router();
 import User from "../schema/User";
 import {config} from "dotenv";
+
 config();
-import CryptoJS from "crypto-js";
+import {AES, enc,} from "crypto-js";
 
 
-import jwt from 'jsonwebtoken';
+import {verify, sign} from 'jsonwebtoken';
 import {Device, OtpReq} from "../data/auth_types.d.";
 import {generateOtp} from "../utils/utils";
 // register
@@ -15,7 +16,7 @@ import {generateOtp} from "../utils/utils";
 
 router.post('/signup', async (req, res) => {
     try {
-        const hashPassword = CryptoJS.AES.encrypt(req.body.password, process.env.HASH_KEY || '').toString();
+        const hashPassword = AES.encrypt(req.body.password, process.env.HASH_KEY || '').toString();
         const newUser = new User({
             username: req.body.username,
             email: req.body.email,
@@ -39,8 +40,8 @@ router.post('/login', async (req, res) => {
         if (!user) {
             res.status(401).json({error: "User not found"});
         } else {
-            const bytes = CryptoJS.AES.decrypt(user.password, process.env.HASH_KEY || '');
-            const passValidate = bytes.toString(CryptoJS.enc.Utf8);
+            const bytes = AES.decrypt(user.password, process.env.HASH_KEY || '');
+            const passValidate = bytes.toString(enc.Utf8);
             if (!passValidate) {
                 res.status(500).json('wrong username or password!');
             }
@@ -70,7 +71,7 @@ router.post('/login', async (req, res) => {
 router.post('/token', async (req, res) => {
     try {
         const refresh_token = req.body.refresh_token
-        jwt.verify(refresh_token, process.env.TOKEN_SECRET_REFRESH || '', (err: any, data: any) => {
+        verify(refresh_token, process.env.TOKEN_SECRET_REFRESH || '', (err: any, data: any) => {
             const token = generateAccessToken({
                 userId: data._id,
                 username: data.username,
@@ -128,7 +129,7 @@ router.post('/create-device-uuid', (req: { body: Device; }, res: any) => {
             });
 
         }
-        const deviceUuId = CryptoJS.AES.encrypt(JSON.stringify({reqBody}), process.env.HASH_KEY!).toString();
+        const deviceUuId = AES.encrypt(JSON.stringify({reqBody}), process.env.HASH_KEY!).toString();
         res.status(200).json({
             "status": "CREATED",
             "message": "device uuid created succesfully ",
@@ -163,10 +164,10 @@ router.post('/req-otp', (req: { body: OtpReq }, res: any) => {
                 "code": "400"
             });
         }
-        const DeviceUuIdBytes = CryptoJS.AES.decrypt(reqBody.deviceUuid, process.env.HASH_KEY!);
-        const passValidate = DeviceUuIdBytes.toString(CryptoJS.enc.Utf8);
+        const DeviceUuIdBytes = AES.decrypt(reqBody.deviceUuid, process.env.HASH_KEY!);
+        const passValidate = DeviceUuIdBytes.toString(enc.Utf8);
 
-        if (!passValidate){
+        if (!passValidate) {
             res.status(404).json({
                 "status": "ERROR",
                 "message": "Device UuId is not valid",
@@ -175,25 +176,7 @@ router.post('/req-otp', (req: { body: OtpReq }, res: any) => {
         }
 
 
-        const nodemailer = require("nodemailer");
-        const otp = generateOtp(5)
-
-        async function main() {
-            const transporter = nodemailer.createTransport({
-                host: "smtp.gmail.com", port: 587, secure: false, auth: {
-                    user: '17182103210@cse.bubt.edu.bd', pass: process.env.MAIL_PASS
-                },
-            });
-            await transporter.sendMail({
-                from: "17182103210@cse.bubt.edu.bd",
-                to: reqBody.email,
-                subject: "OTP BLOG SITE",
-                text: `Your login OTP IS : ${otp}`,
-                html: `Your login OTP IS : ${otp}`,
-            });
-        }
-
-        main().then(() => {
+        sendOtp(reqBody.email).then(() => {
             const response = {
                 message: 'Message Send!'
             }
@@ -207,11 +190,28 @@ router.post('/req-otp', (req: { body: OtpReq }, res: any) => {
 
 
 function generateAccessToken(user: string | object) {
-    return jwt.sign(user, process.env.TOKEN_SECRET || '', {expiresIn: '1m'})
+    return sign(user, process.env.TOKEN_SECRET || '', {expiresIn: '1m'})
 }
 
 function generateRefreshToken(user: string | object | Buffer) {
-    return jwt.sign(user, process.env.TOKEN_SECRET_REFRESH || '', {expiresIn: '2m'})
+    return sign(user, process.env.TOKEN_SECRET_REFRESH || '', {expiresIn: '2m'})
+}
+
+async function sendOtp(email: string) {
+    const nodemailer = require("nodemailer");
+    const otp = generateOtp(5)
+    const transporter = nodemailer.createTransport({
+        host: "smtp.gmail.com", port: 587, secure: false, auth: {
+            user: '17182103210@cse.bubt.edu.bd', pass: process.env.MAIL_PASS
+        },
+    });
+    await transporter.sendMail({
+        from: "17182103210@cse.bubt.edu.bd",
+        to: email,
+        subject: "OTP BLOG SITE",
+        text: `Your login OTP IS : ${otp}`,
+        html: `Your login OTP IS : ${otp}`,
+    });
 }
 
 export {router as AuthRouter};
