@@ -1,17 +1,17 @@
 import {Router} from "express";
-
-const router = Router();
 import User from "../schema/User";
 import {config} from "dotenv";
-
-config();
 import {AES, enc,} from "crypto-js";
 
 
-import {verify, sign} from 'jsonwebtoken';
-import {Device, OtpReq} from "../data/auth_types.d.";
-import {generateOtp} from "../utils/utils";
-// register
+import {sign, verify} from 'jsonwebtoken';
+import {Device, OtpReq} from "../data/auth_types";
+import {addMinutesToDate, generateOtp} from "../utils/utils";
+import Otp from "../schema/Otp";
+
+const router = Router();
+
+config();
 
 
 router.post('/signup', async (req, res) => {
@@ -123,7 +123,7 @@ router.post('/create-device-uuid', (req: { body: Device; }, res: any) => {
         }
         if (reqBody.appInfo == null) {
             res.status(404).json({
-                "status": "error",
+                "status": "ERROR",
                 "message": "need requred perams appInfo",
                 "code": "400"
             });
@@ -147,42 +147,65 @@ router.post('/create-device-uuid', (req: { body: Device; }, res: any) => {
 })
 
 
-router.post('/req-otp', (req: { body: OtpReq }, res: any) => {
+router.post('/req-otp', async (req: { body: OtpReq }, res: any) => {
     try {
         const reqBody: OtpReq = req.body
+        const user = await User.findOne({email: reqBody.email});
+        const oldOtp = await Otp.findOne({deviceUuId: reqBody.deviceUuid});
+
+        const DeviceUuIdBytes = AES.decrypt(reqBody.deviceUuid, process.env.HASH_KEY!);
+        const passValidate = DeviceUuIdBytes.toString(enc.Utf8);
+
         if (reqBody.deviceUuid == null) {
-            res.status(404).json({
+            res.status(400).json({
                 "status": "ERROR",
                 "message": "need requred perams deviceUuid",
                 "code": "400"
             });
-        }
-        if (reqBody.email == null) {
-            res.status(404).json({
+        } else if (reqBody.email == null) {
+            res.status(400).json({
                 "status": "ERROR",
                 "message": "need requred perams email",
                 "code": "400"
             });
-        }
-        const DeviceUuIdBytes = AES.decrypt(reqBody.deviceUuid, process.env.HASH_KEY!);
-        const passValidate = DeviceUuIdBytes.toString(enc.Utf8);
-
-        if (!passValidate) {
+        } else if (!user) {
+            res.status(404).json({
+                "status": "ERROR",
+                "message": `no user found with email ${reqBody.email}`,
+                "code": "404"
+            });
+        } else if (oldOtp) {
+            Otp.findOneAndUpdate({deviceUuId: reqBody.deviceUuid}, {isExpired: true}, {
+                returnOriginal: false
+            })
+        } else if (!passValidate) {
             res.status(404).json({
                 "status": "ERROR",
                 "message": "Device UuId is not valid",
                 "code": "400"
             });
+        } else {
+            const otp = generateOtp(5)
+
+            sendOtp(reqBody.email, otp).then(async () => {
+
+                const newOtp = new Otp({
+                    otp,
+                    email: reqBody.email,
+                    isExpired: false,
+                    deviceUuId: reqBody.deviceUuid,
+                    userId: user._id,
+                    expiredAt: addMinutesToDate(new Date(), 5).toISOString()
+                })
+                await newOtp.save();
+
+                res.status(200).json({
+                    "status": "SUCCESS",
+                    "message": `OTP send to ${reqBody.email} `,
+                    "code": "200"
+                });
+            })
         }
-
-
-        sendOtp(reqBody.email).then(() => {
-            const response = {
-                message: 'Message Send!'
-            }
-            res.status(200).json(response);
-        })
-
     } catch (err) {
         res.status(400).json(err);
     }
@@ -197,9 +220,9 @@ function generateRefreshToken(user: string | object | Buffer) {
     return sign(user, process.env.TOKEN_SECRET_REFRESH || '', {expiresIn: '2m'})
 }
 
-async function sendOtp(email: string) {
+async function sendOtp(email: string, otp: string) {
     const nodemailer = require("nodemailer");
-    const otp = generateOtp(5)
+
     const transporter = nodemailer.createTransport({
         host: "smtp.gmail.com", port: 587, secure: false, auth: {
             user: '17182103210@cse.bubt.edu.bd', pass: process.env.MAIL_PASS

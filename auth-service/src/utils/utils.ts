@@ -4,3 +4,7 @@ export const generateOtp = (size: number) => {
     const y = parseFloat('9' + zeros);
     return String(Math.floor(x + Math.random() * y));
 }
+
+export function addMinutesToDate(date: Date, minutes: number) {
+    return new Date(date.getTime() + minutes * 60000);
+}
