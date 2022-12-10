@@ -5,12 +5,10 @@ const Token = new Schema({
     userId: {
         type: String,
         required: true,
-        unique: true
     },
     deviceUuId: {
         type: String,
         required: true,
-        unique: true
     },
     accessToken: {
         type: String,
@@ -19,7 +17,11 @@ const Token = new Schema({
     refreshToken: {
         type: String,
         required: true,
-    }
+    },
+    isExpired: {
+        type: Boolean,
+        required: true,
+    },
 }, {timestamps: true});
 
 export default model("Token", Token);

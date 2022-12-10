@@ -29,14 +29,45 @@ export type OtpReq = {
     deviceUuid: string
 }
 
+export type OtpVerify = {
+    otp: string,
+    email: string,
+    deviceUuid: string
+}
+
 export type IsoDateString = `${number}-${number}-${number}T${number}:${number}:${number}.${number}Z`;
 
-export type OtpSchema = {
+export type Otp = {
     email: string,
     userId: string,
     deviceUuid: string,
     otp: string,
     isExpired: boolean,
-    expiredAt: IsoDateString,
+    expiredAt: Date,
 
 }
+
+export type UserData = {
+    email: string,
+    userName: string,
+    password: string,
+}
+
+export type TokenData = {
+    userId: string,
+    email: string,
+    deviceUuId: string,
+}
+
+export type HttpRes = {
+    status: string,
+    message: string,
+    code: number,
+    data: object | null,
+}
+
+export type RefreshToken = {
+    refreshToken: string,
+    deviceUuId: string,
+}
+

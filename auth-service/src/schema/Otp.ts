@@ -1,7 +1,7 @@
 import {model, Schema} from "mongoose";
 
 
-const Otp = new Schema({
+const OtpSchema = new Schema({
     otp: {
         type: String,
         required: true,
@@ -9,7 +9,7 @@ const Otp = new Schema({
     deviceUuId: {
         type: String,
         required: true,
-        unique: true
+
     },
     isExpired: {
         type: Boolean,
@@ -25,8 +25,8 @@ const Otp = new Schema({
     },
     userId: {
         type: String,
-        required: true,
+        unique: true
     }
 }, {timestamps: true});
 
-export default model("Otp", Otp);
+export default model("otp", OtpSchema);
